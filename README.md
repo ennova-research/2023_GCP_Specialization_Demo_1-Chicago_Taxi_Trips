@@ -15,3 +15,19 @@ As a demo, we stayed minimal, but we expect to be able to significantly scale-up
 1. Adding an additional seasonality component to our model, to increase the granularity of the predictions from daily to hourly.
 2. Implementing different models for different districts of the city.
 3. Extending our analysis to the average taxi speed in order to determine the amount of traffic...
+
+## Installation
+
+These instructions assume that you have both Docker and Google Clour SDK on your machine, and that you have access to the Google Cloud Platform `ml-spec` project. If you don't, make sure to have met these conditions before proceeding.
+
+To deploy a new version of the app, first create a container by running:
+
+```docker build -t demo-1-app .```
+
+Then upload the container on Google Cloud Build by running:
+
+```gcloud builds submit --tag gcr.io/ml-spec/demo-1-app```
+
+Finally deploy the container on Google Cloud Run by running:
+
+```gcloud run deploy --image gcr.io/ml-spec/demo-1-app --platform managed --port 5000 --memory 4G --cpu 2 --timeout 60m```

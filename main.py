@@ -56,6 +56,7 @@ def create_new_model(body:NewModelBody):
         learning_rates=body.learning_rates
     )
     save_model(model, y_train_masked)
+    print("Model saved.")
     return 200
 
 
