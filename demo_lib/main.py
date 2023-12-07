@@ -138,7 +138,7 @@ def create_masked_model(y:Union[List, None]=None,
         y = np.array(y).astype(np.float32)
 
     # Mask the covid period
-    is_missing = [False]* covid_start + [True] * (covid_stop - covid_start) + [False] * (y.size - covid_stop)
+    is_missing = [False] * covid_start + [True] * (covid_stop - covid_start) + [False] * (y.size - covid_stop)
     y_masked = tfp.sts.MaskedTimeSeries(y, is_missing)
 
     # Create model
@@ -263,13 +263,15 @@ def load_model(timestamp=None):
         models = [x[len(models_dir)+1:] for x in models]
         
         # Sort unique directory values
-        models = sorted(set([x.split(os.sep)[0] for x in models]))
+        models = sorted(set([x.split('/')[0] for x in models]))
         
         # Keep only model directories
         models = [x for x in models if (len(x) == 16) and (x[:6] == 'model_')]
     
         # Select the most recent
         model = models[-1]
+    else:
+        model = f'model_{timestamp}'
     
     # Define the model path
     model_path = f'{models_dir}/{model}'
