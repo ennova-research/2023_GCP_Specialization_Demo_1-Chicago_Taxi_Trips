@@ -35,6 +35,19 @@ def read_root():
 
 @app.post("/newmodel")
 def create_new_model(body:NewModelBody):
+    """
+    Function to create a new model.
+
+    Arguments:
+    - y: list of observed values, or None. If None, the model will be trained on the saved data.
+    - covid_start: the index of the first day of the COVID-19 period.
+    - covid_stop: the index of the last day of the COVID-19 period.
+    - num_variational_steps_per_iter: the number of epochs to run for each learning rate value.
+    - learning_rates: the list of learning rate values to use.
+
+    Returns:
+    200 if a new model is created. The model created will be saved as "model_YYYY-MM-DD".
+    """
     model, y_train_masked = create_masked_model(
         y=body.y,
         covid_start=body.covid_start,
@@ -48,6 +61,16 @@ def create_new_model(body:NewModelBody):
 
 @app.post("/forecast")
 def forecast_future_values(body:ForecastBody):
+    """
+    Function to forecast the number of taxi rides at a specific day.
+
+    Arguments:
+    - model_timestamp: the timestamp of the model to use in the format "YYYY-MM-DD", or None. If None, the latest model will be used.
+    - day: the day to forecast the number of taxi rides for.
+
+    Returns:
+    number_of_rides: int, the number of taxi rides predicted for the desired day.
+    """
     return forecast(
         *load_model(
             timestamp=body.model_timestamp
