@@ -96,14 +96,8 @@ def create_masked_model(y:Union[List, None]=None,
                         learning_rates:List[float]=[1e-2, 1e-3, 1e-4]):
 
     if y is None:
-        # Define the dataset id for importing the data
-        dataset_id = "chicago_taxi_trips"
-
         # Create a "Client" object
         client = bigquery.Client()
-
-        # Construct a reference to the dataset
-        dataset_ref = client.dataset(dataset_id=dataset_id)
 
         query_ride_counts = """
         SELECT
