@@ -6,14 +6,15 @@ from demo_lib import forecast
 from demo_lib import load_model
 from demo_lib import save_model
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException, Request, BackgroundTasks
 
 from typing import List
 from typing import Union
+import os
 
+#os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "google_credentials.json"
 
 app = FastAPI()
-
 
 class NewModelBody(pydantic.BaseModel):
     y:Union[List, None]=None
@@ -27,6 +28,9 @@ class ForecastBody(pydantic.BaseModel):
     model_timestamp:Union[str, None]=None
     day:str
 
+class PredictBody(pydantic.BaseModel):
+    instances: List[ForecastBody]
+
 
 @app.get("/")
 def read_root():
@@ -34,7 +38,7 @@ def read_root():
 
 
 @app.post("/newmodel")
-def create_new_model(body:NewModelBody):
+async def create_new_model(body:NewModelBody, background_tasks: BackgroundTasks):
     """
     Function to create a new model.
 
@@ -48,20 +52,25 @@ def create_new_model(body:NewModelBody):
     Returns:
     200 if a new model is created. The model created will be saved as "model_YYYY-MM-DD".
     """
-    model, y_train_masked = create_masked_model(
-        y=body.y,
-        covid_start=body.covid_start,
-        covid_stop=body.covid_stop,
-        num_variational_steps_per_iter=body.num_variational_steps_per_iter,
-        learning_rates=body.learning_rates
-    )
-    save_model(model, y_train_masked)
+    async def create_and_save_model():
+        model, y_train_masked = create_masked_model(
+            y=body.y,
+            covid_start=body.covid_start,
+            covid_stop=body.covid_stop,
+            num_variational_steps_per_iter=body.num_variational_steps_per_iter,
+            learning_rates=body.learning_rates
+        )
+        save_model(model, y_train_masked)
+        print("Model saved.")
+
+    background_tasks.add_task(create_and_save_model)
+
     print("Model saved.")
-    return 200
+    return {"message": "Training has started and will be available soon"}
 
 
-@app.post("/forecast")
-def forecast_future_values(body:ForecastBody):
+@app.post("/predict")
+async def predict(request: Request):
     """
     Function to forecast the number of taxi rides at a specific day.
 
@@ -72,12 +81,26 @@ def forecast_future_values(body:ForecastBody):
     Returns:
     number_of_rides: int, the number of taxi rides predicted for the desired day.
     """
-    return forecast(
-        *load_model(
-            timestamp=body.model_timestamp
-        ),
-        body.day
-    )
+    req_data = await request.json()
+    body = req_data["instances"][0]
+
+    if "model_timestamp" not in body:
+        body["model_timestamp"] = None
+
+    try:
+        return {"predictions":  [forecast(
+            *load_model(
+                timestamp=body["model_timestamp"]
+            ),
+            body["day"]
+            )]
+        }
+    except:
+        raise HTTPException(status_code=500, detail="malformed request") 
+
+@app.get("/healthcheck")
+async def healthcheck():
+    return {"status": "alive"}
 
 
 if __name__ == '__main__':

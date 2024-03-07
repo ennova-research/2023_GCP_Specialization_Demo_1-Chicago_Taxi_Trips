@@ -1,0 +1,1 @@
+gcloud beta ai endpoints undeploy-model 1514080288005685248 --region=us-west1  --deployed-model-id=6386570464541540352

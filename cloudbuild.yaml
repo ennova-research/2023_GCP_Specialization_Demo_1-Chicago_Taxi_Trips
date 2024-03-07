@@ -1,0 +1,11 @@
+steps:
+- name: 'gcr.io/cloud-builders/docker'
+  args: [
+          'build', '-f', 'Dockerfile',
+          '-t', 'gcr.io/ml-spec/demo-1-app:latest',
+          '--cache-from', 'gcr.io/ml-spec/demo-1-app:latest',
+          '.'
+        ]
+- name: 'gcr.io/cloud-builders/docker'
+  args: ['push', 'gcr.io/ml-spec/demo-1-app:latest' ]
+images: ['gcr.io/ml-spec/demo-1-app:latest' ]
