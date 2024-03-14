@@ -4,6 +4,7 @@ import uvicorn
 from demo_lib import create_masked_model
 from demo_lib import forecast
 from demo_lib import load_model
+from demo_lib import retrain_model
 from demo_lib import save_model
 
 from fastapi import FastAPI, HTTPException, Request, BackgroundTasks
@@ -50,7 +51,7 @@ async def create_new_model(body:NewModelBody, background_tasks: BackgroundTasks)
     - learning_rates: the list of learning rate values to use.
 
     Returns:
-    200 if a new model is created. The model created will be saved as "model_YYYY-MM-DD".
+    A service message that tells the user that the training is ongoing.
     """
     async def create_and_save_model():
         model, y_train_masked = create_masked_model(
@@ -67,6 +68,24 @@ async def create_new_model(body:NewModelBody, background_tasks: BackgroundTasks)
 
     print("Model saved.")
     return {"message": "Training has started and will be available soon"}
+
+
+@app.post("/retrain")
+async def create_new_model(background_tasks: BackgroundTasks):
+    """
+    Function to retrain the model new model.
+
+    Returns:
+    A service message that tells the user that the training is ongoing.
+    """
+    async def create_and_save_model():
+        retrain_model()
+        print("Model saved.")
+
+    background_tasks.add_task(create_and_save_model)
+
+    print("Model saved.")
+    return {"message": "Reraining has started and will be available soon"}
 
 
 @app.post("/predict")

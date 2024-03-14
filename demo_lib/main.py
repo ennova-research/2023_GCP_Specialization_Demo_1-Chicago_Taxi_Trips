@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os
 import pandas as pd
+import shutil
 import tensorflow as tf
 import tensorflow_probability as tfp
 
@@ -427,6 +428,79 @@ def load_model_from_checkpoint(y_train: tfp.sts.MaskedTimeSeries,
     ckpt.restore(ckpt_path).assert_consumed()
 
     return model
+
+
+def get_last_day():
+    """Get the last day with 1000+ rides from BigQuery view."""
+    client = bigquery.Client()
+
+    query_ride_counts = """
+    SELECT
+        *
+    FROM
+        `ml-spec.demo1.group_ride_counts_by_ymd`
+    ORDER BY
+        Year DESC,
+        Month DESC,
+        Day DESC
+    LIMIT
+        100
+    """
+
+    # Create the dataframe
+    df = client.query(query_ride_counts).to_dataframe()
+    mask = df['num_trips'] >= 1e3
+    df = df.loc[mask]
+
+    year = str(df.iloc[0]['Year'])
+    month = str(df.iloc[0]['Month'])
+    day = str(df.iloc[0]['Day'])
+
+    if len(month) == 1:
+        month = '0' + month
+    if len(day) == 1:
+        day = '0' + day
+
+    return f"{year}-{month}-{day}"
+
+
+def retrain_model():
+
+    # Load the latest model
+    model, y_train = load_model()
+
+    # Dump it to checkpoint for creating the saved_model
+    checkpoint_dir = os.path.join('tmp', 'model_checkpoint')
+    checkpoint_path = save_model_to_checkpoint(model, checkpoint_dir)
+
+    del model
+
+    # Create the wrapped model to save
+    wrapper_model = TFPModelWrapper(build_model,
+                                    y_train,
+                                    last_train_day=get_last_day(),
+                                    trend=False,
+                                    variational_posteriors_samples=10000)
+
+    # Update the model parameters with those from the train
+    wrapper_model.load_parameters(checkpoint_path)
+
+    # Save model to ../bin/saved_model
+    export_dir = os.path.join('tmp', 'saved_model')
+    wrapper_model.save(export_dir)
+
+    storage_client = storage.Client()
+    bucket = storage_client.bucket('engo-ml_spec2023-demo1')
+
+    for local_root, _, files in os.walk(export_dir):
+        for filename in files:
+            local_path = os.path.join(local_root, filename)
+            gcs_path = os.path.join('saved_model_new', filename).replace('\\', '/')
+
+            blob = bucket.blob(gcs_path)
+            blob.upload_from_filename(local_path)
+    
+    shutil.rmtree('tmp')
 
 
 class TFPModelWrapper(tf.Module):
