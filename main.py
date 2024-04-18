@@ -71,7 +71,7 @@ async def create_new_model(body:NewModelBody, background_tasks: BackgroundTasks)
 
 
 @app.post("/retrain")
-async def create_new_model(background_tasks: BackgroundTasks):
+async def retrain_model(background_tasks: BackgroundTasks):
     """
     Function to retrain the model new model.
 
@@ -80,7 +80,6 @@ async def create_new_model(background_tasks: BackgroundTasks):
     """
     async def create_and_save_model():
         retrain_model()
-        print("Model saved.")
 
     background_tasks.add_task(create_and_save_model)
 
