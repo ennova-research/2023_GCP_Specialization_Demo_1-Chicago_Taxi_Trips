@@ -30,7 +30,7 @@ Then upload the container on Google Cloud Build by running:
 
 Finally deploy the container on Google Cloud Run by running:
 
-```gcloud run deploy --image gcr.io/ml-spec/demo-1-app --platform managed --port 5000 --memory 4G --cpu 2 --timeout 60m```
+```gcloud run deploy --image gcr.io/ml-spec/demo-1-app --platform managed --port 5000 --memory 16G --cpu 8 --timeout 60m```
 
 The app is currently deployed at the following link:
 
